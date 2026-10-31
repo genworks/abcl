@@ -54,6 +54,8 @@
                          (:file "struct-setf-tests")
 
                          (:file "tagbody-dispatch-tests")
+
+                         (:file "time-tests")
                          (:file "latin1-tests")
                          (:file "bugs" :depends-on 
                                 ("file-system-tests"))
