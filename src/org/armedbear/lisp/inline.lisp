@@ -32,9 +32,16 @@
 (in-package :system)
 
 (defun inline-expansion (name)
-  (get-function-info-value name :inline-expansion))
+  (if (and (consp name) (eq (car name) 'setf))
+      (get (cadr name) 'setf-inline-expansion)
+      (get-function-info-value name :inline-expansion)))
 
+;; A (SETF NAME)'s expansion is kept on NAME's plist, as its source
+;; transform is (see source-transform.lisp): the function-info table is
+;; keyed by identity and holds its keys weakly, so a list key is lost.
 (defun set-inline-expansion (name expansion)
-  (set-function-info-value name :inline-expansion expansion))
+  (if (and (consp name) (eq (car name) 'setf))
+      (setf (get (cadr name) 'setf-inline-expansion) expansion)
+      (set-function-info-value name :inline-expansion expansion)))
 
 (defsetf inline-expansion set-inline-expansion)

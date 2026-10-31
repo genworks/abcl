@@ -50,6 +50,8 @@
                          (:file "the-type-check-tests")
 
                          (:file "policy-scope-tests")
+
+                         (:file "struct-setf-tests")
                          (:file "latin1-tests")
                          (:file "bugs" :depends-on 
                                 ("file-system-tests"))
