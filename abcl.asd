@@ -28,6 +28,8 @@
                          #+abcl
                          (:file "metaclass")
                          #+abcl
+                         (:file "metaclass-slot-access-tests")
+                         #+abcl
                          (:file "mop-tests-setup")
                          #+abcl
                          (:file "mop-tests"
