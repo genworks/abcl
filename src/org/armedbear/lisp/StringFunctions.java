@@ -888,4 +888,130 @@ public final class StringFunctions {
         }
     };
 
+    // ### %parse-integer
+    // %parse-integer string start end radix junk-allowed => integer, index
+    // PARSE-INTEGER's scan, after its keyword arguments are parsed.  A digit
+    // is what DIGIT-CHAR-P accepts and whitespace what WHITESPACEP accepts.
+    private static final Primitive _PARSE_INTEGER = new pf__parse_integer();
+    private static final class pf__parse_integer extends Primitive {
+        pf__parse_integer() {
+            super("%parse-integer", PACKAGE_SYS, false,
+                  "string start end radix junk-allowed");
+        }
+
+        @Override
+        public LispObject execute(LispObject string, LispObject start,
+                                  LispObject end, LispObject radix,
+                                  LispObject junkAllowed)
+        {
+            return parseInteger(string, start, end, radix, junkAllowed != NIL);
+        }
+
+        @Override
+        public LispObject execute(LispObject[] args)
+        {
+            if (args.length != 5)
+                return error(new WrongNumberOfArgumentsException(this, 5));
+            return parseInteger(args[0], args[1], args[2], args[3],
+                                args[4] != NIL);
+        }
+    };
+
+    private static LispObject parseInteger(LispObject arg,
+                                           LispObject startArg,
+                                           LispObject endArg,
+                                           LispObject radixArg,
+                                           boolean junkAllowed)
+    {
+        final AbstractString string = checkString(arg);
+        final int length = string.length();
+        if (!(startArg instanceof Fixnum))
+            return type_error(startArg, Symbol.FIXNUM);
+        final int start = ((Fixnum)startArg).value;
+        final int end;
+        if (endArg == NIL)
+            end = length;
+        else if (endArg instanceof Fixnum)
+            end = ((Fixnum)endArg).value;
+        else
+            return type_error(endArg, list(Symbol.OR, Symbol.NULL,
+                                           Symbol.FIXNUM));
+        if (start < 0 || start > length)
+            return error(new TypeError("Invalid start position " + start
+                                       + " for " + arg.princToString()
+                                       + "."));
+        if (end < start || end > length)
+            return error(new TypeError("Invalid end position " + end
+                                       + " for " + arg.princToString()
+                                       + " with start " + start + "."));
+        if (!(radixArg instanceof Fixnum)
+            || ((Fixnum)radixArg).value < 2 || ((Fixnum)radixArg).value > 36)
+            return type_error(radixArg, list(Symbol.INTEGER, Fixnum.TWO,
+                                             Fixnum.constants[36]));
+        final int radix = ((Fixnum)radixArg).value;
+        final LispThread thread = LispThread.currentThread();
+
+        int index = start;
+        while (index < end && Character.isWhitespace(string.charAt(index)))
+            ++index;
+        if (index == end) {
+            if (junkAllowed)
+                return thread.setValues(NIL, Fixnum.getInstance(end));
+            return parseIntegerError(arg);
+        }
+        boolean minusp = false;
+        char c = string.charAt(index);
+        if (c == '-') {
+            minusp = true;
+            ++index;
+        } else if (c == '+')
+            ++index;
+
+        // Accumulate in a long while it cannot overflow, then in a BigInteger.
+        final long limit = (Long.MAX_VALUE - (radix - 1)) / radix;
+        long small = 0;
+        java.math.BigInteger big = null;
+        boolean foundDigit = false;
+        for (; index < end; ++index) {
+            c = string.charAt(index);
+            final int weight = Character.digit(c, radix);
+            if (weight >= 0) {
+                foundDigit = true;
+                if (big != null)
+                    big = big.multiply(java.math.BigInteger.valueOf(radix))
+                        .add(java.math.BigInteger.valueOf(weight));
+                else if (small <= limit)
+                    small = small * radix + weight;
+                else
+                    big = java.math.BigInteger.valueOf(small)
+                        .multiply(java.math.BigInteger.valueOf(radix))
+                        .add(java.math.BigInteger.valueOf(weight));
+            } else if (junkAllowed) {
+                break;
+            } else if (Character.isWhitespace(c)) {
+                while (++index < end)
+                    if (!Character.isWhitespace(string.charAt(index)))
+                        return parseIntegerError(arg);
+                break;
+            } else {
+                return parseIntegerError(arg);
+            }
+        }
+        final LispObject result;
+        if (!foundDigit) {
+            if (!junkAllowed)
+                return parseIntegerError(arg);
+            result = NIL;
+        } else if (big != null) {
+            result = number(minusp ? big.negate() : big);
+        } else {
+            result = Bignum.getInstance(minusp ? -small : small);
+        }
+        return thread.setValues(result, Fixnum.getInstance(index));
+    }
+
+    private static LispObject parseIntegerError(LispObject string) {
+        return PACKAGE_SYS.intern("PARSE-INTEGER-ERROR").execute(string);
+    }
+
 }

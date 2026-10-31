@@ -572,6 +572,7 @@ public class Autoload extends Function
         autoload(PACKAGE_SYS, "%nstring-capitalize", "StringFunctions");
         autoload(PACKAGE_SYS, "%nstring-downcase", "StringFunctions");
         autoload(PACKAGE_SYS, "%nstring-upcase", "StringFunctions");
+        autoload(PACKAGE_SYS, "%parse-integer", "StringFunctions");
         autoload(PACKAGE_SYS, "%reinit-emf-cache", "EMFCache", true);
         autoload(PACKAGE_SYS, "%run-shell-command", "ShellCommand");
         autoload(PACKAGE_SYS, "%server-socket-close", "server_socket_close");
