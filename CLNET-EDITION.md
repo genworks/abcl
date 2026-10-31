@@ -38,6 +38,7 @@ Not yet submitted:
 | No shared cons counter: consing scales across threads; `TIME` reports bytes consed |
 | `PARSE-INTEGER` about 5 times faster |
 | Integers in fixnum range converted from Java `BigInteger`s are fixnums (were neither `EQL` nor `=` to the same fixnum) |
+| `FLOOR`, `CEILING`, `ROUND` and `REM` compiled to static calls, 4-10 times faster; `TRUNCATE` of `most-negative-fixnum` by -1 no longer wraps (added in 1.9.3-clnet.2) |
 
 Each change has its own tests in `test/lisp/abcl/`.  The edition passes
 the same tests as `master` plus its own, and gives the same results on
