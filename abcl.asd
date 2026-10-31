@@ -48,6 +48,8 @@
                          (:file "gethash-tests")
 
                          (:file "the-type-check-tests")
+
+                         (:file "policy-scope-tests")
                          (:file "latin1-tests")
                          (:file "bugs" :depends-on 
                                 ("file-system-tests"))

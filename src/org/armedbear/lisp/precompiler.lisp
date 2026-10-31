@@ -432,8 +432,22 @@
         #'(lambda(,arglist ,form ,args)
             ,@body)))
 
+(defmacro with-local-compiler-policy (&body body)
+  "Bind the compiler policy and the other variables that
+PROCESS-OPTIMIZATION-DECLARATIONS assigns, so that the declarations of a
+LAMBDA or LOCALLY govern only its own body.  Without this, (compile 'f)
+on an interpreted function with (declare (optimize (safety 0))) set the
+global policy to SAFETY 0."
+  `(let ((*inline-declarations* *inline-declarations*)
+         (*speed* *speed*)
+         (*safety* *safety*)
+         (*debug* *debug*)
+         (*space* *space*)
+         (*explain* *explain*))
+     ,@body))
+
 (defun precompile-locally (form)
-  (let ((*inline-declarations* *inline-declarations*))
+  (with-local-compiler-policy
     (process-optimization-declarations (cdr form))
   (cons 'LOCALLY (mapcar #'precompile1 (cdr form)))))
 
@@ -646,29 +660,29 @@
                 :format-arguments (list lambda-list)))))))
 
 (defun precompile-lambda (form)
-  (let ((body (cddr form))
-        (precompiled-lambda-list
-           (precompile-lambda-list (cadr form)))
-        (*inline-declarations* *inline-declarations*)
-        (*precompile-env* (make-environment *precompile-env*)))
-    (process-optimization-declarations body)
-    (dolist (var (extract-lambda-vars precompiled-lambda-list))
-      (environment-add-symbol-binding *precompile-env* var nil))
-    (list* 'LAMBDA precompiled-lambda-list
-           (mapcar #'precompile1 body))))
-
-(defun precompile-named-lambda (form)
-  (let ((lambda-form (list* 'LAMBDA (caddr form) (cdddr form))))
-    (let ((body (cddr lambda-form))
+  (with-local-compiler-policy
+    (let ((body (cddr form))
           (precompiled-lambda-list
-           (precompile-lambda-list (cadr lambda-form)))
-          (*inline-declarations* *inline-declarations*)
+            (precompile-lambda-list (cadr form)))
           (*precompile-env* (make-environment *precompile-env*)))
       (process-optimization-declarations body)
       (dolist (var (extract-lambda-vars precompiled-lambda-list))
         (environment-add-symbol-binding *precompile-env* var nil))
-      (list* 'NAMED-LAMBDA (cadr form) precompiled-lambda-list
+      (list* 'LAMBDA precompiled-lambda-list
              (mapcar #'precompile1 body)))))
+
+(defun precompile-named-lambda (form)
+  (let ((lambda-form (list* 'LAMBDA (caddr form) (cdddr form))))
+    (with-local-compiler-policy
+      (let ((body (cddr lambda-form))
+            (precompiled-lambda-list
+              (precompile-lambda-list (cadr lambda-form)))
+            (*precompile-env* (make-environment *precompile-env*)))
+        (process-optimization-declarations body)
+        (dolist (var (extract-lambda-vars precompiled-lambda-list))
+          (environment-add-symbol-binding *precompile-env* var nil))
+        (list* 'NAMED-LAMBDA (cadr form) precompiled-lambda-list
+               (mapcar #'precompile1 body))))))
 
 (defun precompile-defun (form)
   (if *in-jvm-compile*
