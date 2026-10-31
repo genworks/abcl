@@ -46,19 +46,12 @@
                                 :depends-on ("compiler-tests"))
                          (:file "misc-tests")
                          (:file "gethash-tests")
-
                          (:file "the-type-check-tests")
-
                          (:file "policy-scope-tests")
-
                          (:file "struct-setf-tests")
-
                          (:file "tagbody-dispatch-tests")
-
                          (:file "time-tests")
-
                          (:file "parse-integer-tests")
-
                          (:file "bignum-normalize-tests")
                          (:file "latin1-tests")
                          (:file "bugs" :depends-on 
