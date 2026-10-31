@@ -1189,6 +1189,22 @@ where each of the vars returned is a list with these elements:
           (dformat t "p1-setq: unknown variable ~S~%" arg1)))
     (list 'SETQ arg1 (p1 arg2))))
 
+(defparameter *inline-checked-types*
+  '(double-float single-float fixnum integer cons symbol character
+    simple-vector list number real float rational string)
+  "The types for which P2-THE checks (THE type form) with one instanceof or
+one virtual predicate, so P1-THE leaves the form for it rather than
+rewriting it into a call to REQUIRE-TYPE.  Each check must agree exactly
+with TYPEP; see EMIT-INLINE-TYPE-CHECK.")
+
+(defun inline-checked-type-p (type)
+  "Whether P2-THE checks (THE TYPE form) inline: TYPE is one of
+*INLINE-CHECKED-TYPES*, or names a structure class (as DEFSTRUCT
+accessors' THE forms do), which StructureObject.typep answers."
+  (and (symbolp type)
+       (or (member type *inline-checked-types*)
+           (typep (find-class type nil) 'structure-class))))
+
 (defun p1-the (form)
   (unless (= (length form) 3)
     (compiler-error "Wrong number of arguments for special operator ~A (expected 2, but received ~D)."
@@ -1205,6 +1221,11 @@ where each of the vars returned is a list with these elements:
                                (require-type ,sym ',type)
                                ,sym)))
              (p1 new-expr)))
+          ((and (<= 1 *safety* 2)
+                (inline-checked-type-p type))
+           ;; P2-THE checks these inline, and the type stays known to
+           ;; the rest of the compiler.
+           (list 'THE type (p1 expr)))
           ((and (<= 1 *safety* 2) ;; at safety 1 or 2 check relatively
                 (symbolp type))   ;; simple types (those specified by a single symbol)
            (let* ((sym (gensym))

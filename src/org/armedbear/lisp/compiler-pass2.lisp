@@ -5496,7 +5496,12 @@ for use with derive-type-times.")
                          (variable-declared-type variable))
                         ((neq (variable-derived-type variable) :none)
                          (variable-derived-type variable))
-                        ((= 0 (variable-writes variable))
+                        ((and (= 0 (variable-writes variable))
+                              ;; Only a LET or LET* variable takes its
+                              ;; value from its INITFORM.  A parameter's or
+                              ;; a MULTIPLE-VALUE-BIND variable's INITFORM
+                              ;; is NIL for none, which derived as NULL.
+                              (let/let*-node-p (variable-block variable)))
                          (derive-type (variable-initform variable)))
                         (t
                          t))))))
@@ -6696,15 +6701,66 @@ We need more thought here.
     (when type-to-use
       (generate-instanceof-type-check-for-value type-to-use))))
 
+(defun emit-inline-type-check (type)
+  "For P2-THE: check the value on the stack against TYPE, for which
+INLINE-CHECKED-TYPE-P is true, with one instanceof, one virtual
+predicate or (for a structure class name) one call to typep, signalling
+a TYPE-ERROR if it fails.  The value stays on the stack."
+  (let ((class (case type
+                 (double-float  +lisp-double-float+)
+                 (single-float  +lisp-single-float+)
+                 (fixnum        +lisp-fixnum+)
+                 (integer       +lisp-integer+)
+                 (cons          +lisp-cons+)
+                 (symbol        +lisp-symbol+)
+                 (character     +lisp-character+)
+                 (simple-vector +lisp-simple-vector+)))
+        (predicate (case type
+                     (list     "listp")
+                     (number   "numberp")
+                     (real     "realp")
+                     (float    "floatp")
+                     (rational "rationalp")
+                     (string   "stringp")))
+        (label (gensym)))
+    (emit 'dup)
+    (cond (class
+           (emit-instanceof class)
+           (emit 'ifne label))
+          (predicate
+           (emit-invokevirtual +lisp-object+ predicate nil :boolean)
+           (emit 'ifne label))
+          (t
+           ;; A structure class name: StructureObject.typep checks the
+           ;; class and its superclasses; anything else answers NIL.
+           (emit-load-externalized-object type)
+           (emit-invokevirtual +lisp-object+ "typep"
+                               (lisp-object-arg-types 1) +lisp-object+)
+           (emit-push-nil)
+           (emit 'if_acmpne label)))
+    (emit-load-externalized-object type)
+    (emit-invokestatic +lisp+ "type_error"
+                       (lisp-object-arg-types 2) +lisp-object+)
+    (label label)))
+
 (defun p2-the (form target representation)
   (let ((type-form (second form))
         (value-form (third form)))
     (cond ((and (subtypep type-form 'FIXNUM)
+                (eq representation :int)
                 (consp value-form)
                 (eq (car value-form) 'structure-ref))
            ;; Special case for structure slot references: getFixnumSlotValue()
-           ;; signals an error if the slot's value is not a fixnum.
+           ;; signals an error if the slot's value is not a fixnum.  Only
+           ;; when an :INT is wanted, since only then is it called.
            (compile-form value-form target representation))
+          ((and (> *safety* 0)
+                (inline-checked-type-p type-form)
+                (not (compiler-subtypep (derive-type value-form) type-form)))
+           (compile-form value-form 'stack nil)
+           (emit-inline-type-check type-form)
+           (fix-boxing representation nil)
+           (emit-move-from-stack target representation))
           ((and (> *safety* 0)
                 (not (compiler-subtypep (derive-type value-form) type-form)))
            (compile-form value-form 'stack nil)
