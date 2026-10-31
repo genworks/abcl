@@ -6172,6 +6172,39 @@ We need more thought here.
     (fix-boxing representation nil) ; FIXME use derived result type
     (emit-move-from-stack target representation)))
 
+;; FLOOR, CEILING, ROUND and REM were full calls from compiled code.
+;; These static methods take two fixnums the short way and otherwise
+;; hand over to the function; FLOOR, CEILING and ROUND set both values.
+(defun p2-static-division (form target representation class method
+                           &optional (min-args 1))
+  (let ((args (cdr form)))
+    (unless (<= min-args (length args) 2)
+      (compiler-warn "Wrong number of arguments for ~A (expected ~D or 2, but received ~D)."
+                     (car form) min-args (length args))
+      (compile-function-call form target representation)
+      (return-from p2-static-division))
+    (let ((arg1 (first args))
+          (arg2 (if (cdr args) (second args) 1)))
+      (with-operand-accumulation
+          ((compile-operand arg1 nil)
+           (compile-operand arg2 nil)))
+      (maybe-emit-clear-values arg1 arg2)
+      (emit-invokestatic class method (lisp-object-arg-types 2) +lisp-object+)
+      (fix-boxing representation nil)
+      (emit-move-from-stack target representation))))
+
+(defun p2-floor (form target representation)
+  (p2-static-division form target representation +lisp-floor+ "floor"))
+
+(defun p2-ceiling (form target representation)
+  (p2-static-division form target representation +lisp-ceiling+ "ceiling"))
+
+(defun p2-round (form target representation)
+  (p2-static-division form target representation +lisp+ "round"))
+
+(defun p2-rem (form target representation)
+  (p2-static-division form target representation +lisp-rem+ "rem" 2))
+
 (defun p2-elt (form target representation)
   (cond ((and (check-arg-count form 2)
               (fixnum-type-p (derive-compiler-type (third form)))
@@ -7993,6 +8026,10 @@ Could arguably better named as *SIGNAL-COMPILE-WARNINGS-P*.")
   (install-p2-handler 'throw               'p2-throw)
   (install-p2-handler 'truly-the           'p2-truly-the)
   (install-p2-handler 'truncate            'p2-truncate)
+  (install-p2-handler 'floor               'p2-floor)
+  (install-p2-handler 'ceiling             'p2-ceiling)
+  (install-p2-handler 'round               'p2-round)
+  (install-p2-handler 'rem                 'p2-rem)
   (install-p2-handler 'values              'p2-values)
   (install-p2-handler 'vectorp             'p2-vectorp)
   (install-p2-handler 'vector-push-extend  'p2-vector-push-extend)

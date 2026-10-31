@@ -53,4 +53,17 @@ public final class rem extends Primitive
     }
 
     private static final Primitive REM = new rem();
+
+    /** REM of NUMBER by DIVISOR.  Compiled code calls this directly; two
+     * fixnums are divided here, anything else goes through the
+     * primitive. */
+    public static LispObject rem(LispObject number, LispObject divisor)
+    {
+        if (number instanceof Fixnum && divisor instanceof Fixnum) {
+            final int d = ((Fixnum)divisor).value;
+            if (d != 0)
+                return Fixnum.getInstance(((Fixnum)number).value % d);
+        }
+        return REM.execute(number, divisor);
+    }
 }

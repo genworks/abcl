@@ -86,4 +86,26 @@ public final class floor extends Primitive
     }
 
     private static final Primitive FLOOR = new floor();
+
+    /** FLOOR of NUMBER by DIVISOR, setting both values.  Compiled code
+     * calls this directly; two fixnums are divided here, anything else
+     * goes through the primitive. */
+    public static LispObject floor(LispObject number, LispObject divisor)
+    {
+        if (number instanceof Fixnum && divisor instanceof Fixnum) {
+            final int n = ((Fixnum)number).value;
+            final int d = ((Fixnum)divisor).value;
+            if (d != 0 && !(d == -1 && n == Integer.MIN_VALUE)) {
+                int q = n / d;
+                int r = n % d;
+                if (r != 0 && (r > 0) != (d > 0)) {
+                    --q;
+                    r += d;
+                }
+                return LispThread.currentThread()
+                    .setValues(Fixnum.getInstance(q), Fixnum.getInstance(r));
+            }
+        }
+        return FLOOR.execute(number, divisor);
+    }
 }

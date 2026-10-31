@@ -1482,6 +1482,37 @@ public static synchronized final void handleInterrupt()
       return Bignum.getInstance(n);
   }
 
+  /** ROUND of NUMBER by DIVISOR, setting both values.  Compiled code
+   * calls this directly; two fixnums are rounded here, to even on a
+   * tie as ROUND (numbers.lisp) does, anything else goes to ROUND. */
+  public static final LispObject round(LispObject number, LispObject divisor)
+  {
+    if (number instanceof Fixnum && divisor instanceof Fixnum) {
+      final int n = ((Fixnum)number).value;
+      final int d = ((Fixnum)divisor).value;
+      if (d != 0 && !(d == -1 && n == Integer.MIN_VALUE)) {
+        int q = n / d;
+        int r = n % d;
+        if (r != 0) {
+          final long twice = 2L * Math.abs((long) r);
+          final long magnitude = Math.abs((long) d);
+          if (twice > magnitude || (twice == magnitude && (q & 1) != 0)) {
+            if ((r > 0) == (d > 0)) {
+              ++q;
+              r -= d;
+            } else {
+              --q;
+              r += d;
+            }
+          }
+        }
+        return LispThread.currentThread()
+          .setValues(Fixnum.getInstance(q), Fixnum.getInstance(r));
+      }
+    }
+    return Symbol.ROUND.getSymbolFunctionOrDie().execute(number, divisor);
+  }
+
   public static final int mod(int number, int divisor)
 
   {
