@@ -195,22 +195,30 @@
                (values s (length s) t (zerop fdigits) 0))
              (values "." 1 t t 0)))
         (t
-         (when scale
-           (setf x (* x (expt 10 scale))))
-         (let* ((s (float-string x))
+         ;; X times 10^SCALE, in digits: X's own shortest digits with the
+         ;; point moved, never the digits of a scaled float, and rounded
+         ;; from X's exact value where FDIGITS cuts them.  Scaling the
+         ;; float, or cutting its shortest digits and rounding them again,
+         ;; printed (format nil "~,6,,0e" 64.79735) -- the single-float
+         ;; 64.797348... -- as 0.647974e+2, and 9.999 to two fraction
+         ;; digits as 10.0.
+         (let* ((shift (or scale 0))
+                (s (shifted-float-string x shift))
                 (length (length s))
                 (index (position #\. s)))
-           (when (and (< x 1)
-                      (> length 0)
-                      (eql (schar s 0) #\0))
-             (setf s (subseq s 1)
-                   length (length s)
-                   index (position #\. s)))
            (when fdigits
              ;; "Leading zeros are not permitted, except that a single zero
              ;; digit is output before the decimal point if the printed value
              ;; is less than one, and this single zero digit is not output at
              ;; all if w=d+1."
+             ;; A lone zero after the point (90000870.0, the shortest
+             ;; digits of 9.000087e7 ending left of the point) is no
+             ;; digit to keep or to cut: drop it, and pad as for any
+             ;; shorter fraction.  Cutting it went to the exact value,
+             ;; and ~,0F printed 90000872.
+             (when (and (= (- length index 1) 1) (char= (schar s (1- length)) #\0))
+               (setf s (subseq s 0 (1+ index))
+                     length (length s)))
              (let ((actual-fdigits (- length index 1)))
                (cond ((< actual-fdigits fdigits)
                       ;; Add the required number of trailing zeroes.
@@ -219,15 +227,10 @@
                                                         :initial-element #\0))
                             length (length s)))
                      ((> actual-fdigits fdigits)
-                      (let* ((desired-length (+ index 1 fdigits))
-                             (c (schar s desired-length)))
-                        (setf s (subseq s 0 (+ index 1 fdigits))
-                              length (length s)
-                              index (position #\. s))
-                        (when (char>= c #\5)
-                          (setf s (round-up s)
-                                length (length s)
-                                index (position #\. s))))))))
+                      (setf s (fixed-digit-string (* (rational x) (expt 10 shift))
+                                                  fdigits)
+                            length (length s)
+                            index (position #\. s))))))
            (when (and width (> length width))
              ;; The string is too long. Shorten it by removing insignificant
              ;; trailing zeroes if possible.
@@ -245,6 +248,53 @@
                              length (length s)
                              index (position #\. s))))))))
            (values s length (eql index 0) (eql index (1- length)) index)))))
+
+(defun shifted-float-string (x shift)
+  "The shortest digits of the float X with the point moved SHIFT places
+right, around a point with neither leading nor trailing zeros beyond the
+point's own place."
+  (let* ((s (float-string x))
+         (point (position #\. s))
+         (digits (remove #\. s))
+         (first (or (position #\0 digits :test-not #'char=) 0))
+         (last (1+ (or (position #\0 digits :test-not #'char= :from-end t)
+                       (1- (length digits)))))
+         (digits (subseq digits first last))
+         (point (+ (- point first) shift)))
+    (cond ((<= point 0)
+           (concatenate 'string "." (make-string (- point) :initial-element #\0)
+                        digits))
+          ((>= point (length digits))
+           (concatenate 'string digits
+                        (make-string (- point (length digits)) :initial-element #\0)
+                        ".0"))
+          (t
+           (concatenate 'string (subseq digits 0 point) "."
+                        (subseq digits point))))))
+
+(defun float-digits-exponent (x)
+  "The power of ten E for which the shortest digits of the float X, as a
+decimal fraction, times 10^E are X: 64.79735 is 0.6479735 times 10^2."
+  (let* ((s (float-string x))
+         (point (position #\. s))
+         (digits (remove #\. s)))
+    (- point (or (position #\0 digits :test-not #'char=) 0))))
+
+(defun fixed-digit-string (r fdigits)
+  "The non-negative rational R rounded to FDIGITS fraction digits, halves
+up, as digits around a point with no leading zero."
+  (let ((unit (expt 10 fdigits)))
+    (multiple-value-bind (int frac) (floor (floor (+ (* r unit) 1/2)) unit)
+      (let ((fraction (write-to-string frac :base 10 :radix nil)))
+        (concatenate 'string
+                     (if (zerop int) "" (write-to-string int :base 10 :radix nil))
+                     "."
+                     (if (zerop fdigits)
+                         ""
+                         (concatenate 'string
+                                      (make-string (- fdigits (length fraction))
+                                                   :initial-element #\0)
+                                      fraction)))))))
 
 (defun round-up (string)
   (let* ((index (position #\. string))
@@ -2266,8 +2316,11 @@
       (format-princ stream number nil nil w 1 0 pad)))
 
 (defun format-exponent-marker (number)
+  ;; "The exponent marker that prin1 would use" (CLHS 22.3.3.2): ABCL's
+  ;; prin1 writes 1.0E10 for a float of the default format, and ~E
+  ;; wrote 1.0e+10.
   (if (typep number *read-default-float-format*)
-      #\e
+      #\E
       (typecase number
         (single-float #\f)
         (double-float #\d)
@@ -2291,47 +2344,64 @@
            (or (sys::float-infinity-p number)
                (sys::float-nan-p number)))
       (prin1 number stream)
-      (multiple-value-bind (num expt) (sys::scale-exponent (abs number))
-        (let* ((expt (- expt k))
-               (estr (decimal-string (abs expt)))
-               (elen (if e (max (length estr) e) (length estr)))
-               (fdig (if d (if (plusp k) (1+ (- d k)) d) nil))
-               (fmin (if (minusp k) (- 1 k) nil))
-               (spaceleft (if w
-                              (- w 2 elen
-                                 (if (or atsign (minusp number))
-                                     1 0))
-                              nil)))
-          (if (and w ovf e (> elen e)) ;exponent overflow
-              (dotimes (i w) (write-char ovf stream))
-              (multiple-value-bind (fstr flen lpoint)
-                (sys::flonum-to-string num spaceleft fdig k fmin)
-                (when w
-                  (decf spaceleft flen)
-                  (when lpoint
-                    (if (> spaceleft 0)
-                        (decf spaceleft)
-                        (setq lpoint nil))))
-                (cond ((and w (< spaceleft 0) ovf)
-                       ;;significand overflow
-                       (dotimes (i w) (write-char ovf stream)))
-                      (t (when w
-                           (dotimes (i spaceleft) (write-char pad stream)))
-                         (if (minusp number)
-                             (write-char #\- stream)
-                             (if atsign (write-char #\+ stream)))
-                         (when lpoint (write-char #\0 stream))
-                         (write-string fstr stream)
-                         (write-char (if marker
-                                         marker
-                                         (format-exponent-marker number))
-                                     stream)
-                         (write-char (if (minusp expt) #\- #\+) stream)
-                         (when e
-                           ;;zero-fill before exponent if necessary
-                           (dotimes (i (- e (length estr)))
-                             (write-char #\0 stream)))
-                         (write-string estr stream)))))))))
+      ;; EXPT is taken from NUMBER's shortest digits, which are the digits
+      ;; printed: from its exact value it can differ by one (the single-
+      ;; float 1.0e-5 is 9.99999974e-6), and the digits then printed as
+      ;; 10.e-6.  EXACT is ABS(NUMBER) / 10^EXPT, for the carry check below.
+      (let ((expt (if (zerop number) 1 (sys::float-digits-exponent (abs number)))))
+        ;; Rounding can carry the mantissa to the next power of ten (9.96
+        ;; to one digit is 10.0, which printed as 10.e+0, and ~,0E of 9.6
+        ;; failed): take that power into the exponent, so that it prints
+        ;; as 1.0e+1.
+        (let ((exact (/ (rational (abs number)) (expt 10 expt))))
+          (when d
+            (let ((top (expt 10 (+ k (if (plusp k) (1+ (- d k)) d)))))
+              (when (and (plusp exact)
+                         (>= (floor (+ (* exact top) 1/2)) top))
+                (setf exact (/ exact 10)
+                      expt (1+ expt)))))
+          (let* ((expt (- expt k))
+                 (estr (decimal-string (abs expt)))
+                 (elen (if e (max (length estr) e) (length estr)))
+                 (fdig (if d (if (plusp k) (1+ (- d k)) d) nil))
+                 (fmin (if (minusp k) (- 1 k) nil))
+                 (spaceleft (if w
+                                (- w 2 elen
+                                   (if (or atsign (minusp number))
+                                       1 0))
+                                nil)))
+            (if (and w ovf e (> elen e)) ;exponent overflow
+                (dotimes (i w) (write-char ovf stream))
+                (multiple-value-bind (fstr flen lpoint)
+                  ;; The digits of NUMBER itself, scaled by the exponent
+                  ;; printed; NUM, a float, is only near that value.
+                  (sys::flonum-to-string (abs number) spaceleft fdig (- expt) fmin)
+                  (when w
+                    (decf spaceleft flen)
+                    (when lpoint
+                      (if (> spaceleft 0)
+                          (decf spaceleft)
+                          (setq lpoint nil))))
+                  (cond ((and w (< spaceleft 0) ovf)
+                         ;;significand overflow
+                         (dotimes (i w) (write-char ovf stream)))
+                        (t (when w
+                             (dotimes (i spaceleft) (write-char pad stream)))
+                           (if (minusp number)
+                               (write-char #\- stream)
+                               (if atsign (write-char #\+ stream)))
+                           (when lpoint (write-char #\0 stream))
+                           (write-string fstr stream)
+                           (write-char (if marker
+                                           marker
+                                           (format-exponent-marker number))
+                                       stream)
+                           (write-char (if (minusp expt) #\- #\+) stream)
+                           (when e
+                             ;;zero-fill before exponent if necessary
+                             (dotimes (i (- e (length estr)))
+                               (write-char #\0 stream)))
+                           (write-string estr stream))))))))))
 
 (def-format-interpreter #\G (colonp atsignp params)
   (when colonp
