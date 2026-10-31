@@ -52,6 +52,8 @@
                          (:file "policy-scope-tests")
 
                          (:file "struct-setf-tests")
+
+                         (:file "tagbody-dispatch-tests")
                          (:file "latin1-tests")
                          (:file "bugs" :depends-on 
                                 ("file-system-tests"))

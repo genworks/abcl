@@ -3767,9 +3767,14 @@ given a specific common representation.")
          (END-BLOCK (gensym "U"))
          (RETHROW (gensym "T"))
          (EXIT (gensym "E"))
+         (DISPATCH (gensym "D"))
          (must-clear-values nil)
+         (non-local-tags (remove-if-not #'tag-used-non-locally
+                                        (tagbody-tags block)))
          (specials-register (when (tagbody-non-local-go-p block)
-                              (allocate-register nil))))
+                              (allocate-register nil)))
+         (tag-register (when (tagbody-non-local-go-p block)
+                         (allocate-register nil))))
     ;; Scan for tags.
     (dolist (tag (tagbody-tags block))
       (push tag *visible-tags*))
@@ -3782,7 +3787,22 @@ given a specific common representation.")
       (emit-invokespecial-init +lisp-object+ '())
       (emit-new-closure-binding (tagbody-id-variable block)))
     (when (tagbody-non-local-go-p block)
-      (save-dynamic-environment specials-register))
+      (save-dynamic-environment specials-register)
+      ;; The handler below sends a non-local GO here rather than to the
+      ;; tag, so that every tag is reachable without passing through the
+      ;; handler.  HotSpot's C1 refuses a method in which code that a
+      ;; handler covers is first reached through that handler ("error
+      ;; while joining with exception handler"), as the clause tags of
+      ;; HANDLER-CASE and RESTART-CASE were.  Normal entry finds no tag.
+      (emit 'aconst_null)
+      (astore tag-register)
+      (label DISPATCH)
+      (aload tag-register)
+      (emit 'ifnull BEGIN-BLOCK)
+      (dolist (tag non-local-tags)
+        (aload tag-register)
+        (emit-load-externalized-object (tag-label tag))
+        (emit 'if_acmpeq (tag-label tag))))
     (label BEGIN-BLOCK)
     (do* ((rest body (cdr rest))
           (subform (car rest) (car rest)))
@@ -3806,8 +3826,7 @@ given a specific common representation.")
       (let* ((HANDLER (gensym "H"))
              (EXTENT-EXIT-HANDLER (gensym "HE"))
              (*register* *register*)
-             (go-register (allocate-register nil))
-             (tag-register (allocate-register nil)))
+             (go-register (allocate-register nil)))
         (label HANDLER)
         ;; The Go object is on the runtime stack. Stack depth is 1.
         (emit 'dup)
@@ -3822,12 +3841,11 @@ given a specific common representation.")
         (restore-dynamic-environment specials-register)
         ;; Don't actually generate comparisons for tags
         ;; to which there is no non-local GO instruction
-        (dolist (tag (remove-if-not #'tag-used-non-locally
-                                    (tagbody-tags block)))
+        (dolist (tag non-local-tags)
           (aload tag-register)
           (emit-load-externalized-object (tag-label tag))
           ;; Jump if EQ.
-          (emit 'if_acmpeq (tag-label tag)))
+          (emit 'if_acmpeq DISPATCH))
         (label RETHROW)
         ;; Not found. Re-throw Go.
         (aload go-register)
