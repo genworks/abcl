@@ -54,8 +54,8 @@ public final class Bignum extends LispInteger
   }
 
   public static LispInteger getInstance(BigInteger n) {
-      if (MOST_NEGATIVE_FIXNUM.compareTo(n) < 0 ||
-              MOST_POSITIVE_FIXNUM.compareTo(n) > 0)
+      if (n.compareTo(MOST_NEGATIVE_FIXNUM) < 0 ||
+              n.compareTo(MOST_POSITIVE_FIXNUM) > 0)
           return new Bignum(n);
       else
           return Fixnum.getInstance(n.intValue());
