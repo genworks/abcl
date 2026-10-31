@@ -34,10 +34,18 @@
 (export '(source-transform define-source-transform expand-source-transform))
 
 (defun source-transform (name)
-  (get-function-info-value name :source-transform))
+  (if (and (consp name) (eq (car name) 'setf))
+      (get (cadr name) 'setf-source-transform)
+      (get-function-info-value name :source-transform)))
 
+;; A (SETF NAME) transform is kept on NAME's plist.  The function-info
+;; table is a WeakHashMap keyed by identity, so a list key could never be
+;; found again, and was soon collected: no (SETF NAME) transform, those
+;; of DEFSTRUCT's writers included, ever applied.
 (defun set-source-transform (name transform)
-  (set-function-info-value name :source-transform transform))
+  (if (and (consp name) (eq (car name) 'setf))
+      (setf (get (cadr name) 'setf-source-transform) transform)
+      (set-function-info-value name :source-transform transform)))
 
 (defsetf source-transform set-source-transform)
 
