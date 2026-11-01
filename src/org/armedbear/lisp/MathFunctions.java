@@ -612,9 +612,19 @@ public final class MathFunctions
                     return DoubleFloat.ONE;
                 return SingleFloat.ONE;
             }
-            if (base.zerop())
+            if (base.zerop()) {
+                // Zero to a positive power is a zero of the type that
+                // contagion gives the arguments: (expt 0 2.0) is 0.0, as
+                // (* 0 2.0) is.  Returning BASE gave 0.
+                LispObject realPower = (power instanceof Complex)
+                    ? ((Complex)power).getRealPart() : power;
+                if (realPower.plusp())
+                    return base.multiplyBy(power);
                 return base;
-            if (base.isEqualTo(1))
+            }
+            // One to a rational power is itself; to a float power it is a
+            // float one (computed below), not the rational 1.
+            if (base.isEqualTo(1) && power.rationalp())
                 return base;
             
             if ((power instanceof Fixnum
