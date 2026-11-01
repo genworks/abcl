@@ -56,6 +56,7 @@
                          (:file "floor-ceiling-tests")
                          (:file "subtypep-atom-tests")
                          (:file "pprint-loop-tests")
+                         (:file "unboxed-constant-tests")
                          (:file "latin1-tests")
                          (:file "bugs" :depends-on 
                                 ("file-system-tests"))

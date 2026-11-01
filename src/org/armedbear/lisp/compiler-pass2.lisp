@@ -1543,6 +1543,11 @@ The field type of the object is specified by OBJ-REF."
     g))
 
 (defknown compile-constant (t t t) t)
+(defun emit-load-constant-object (form)
+  (if (null form)
+      (emit-push-nil)
+      (emit-load-externalized-object form)))
+
 (defun compile-constant (form target representation)
   (unless target
     (return-from compile-constant))
@@ -1550,23 +1555,21 @@ The field type of the object is specified by OBJ-REF."
     (:int
      (cond ((fixnump form)
             (emit-push-constant-int form))
-           ((integerp form)
-            (emit-load-externalized-object form)
-            (emit-invokevirtual +lisp-object+ "intValue" nil :int))
            (t
-            (sys::%format t "compile-constant int representation~%")
-            (assert nil)))
+            ;; An integer that is no fixnum, or no integer at all: reaching
+            ;; it violates a declaration (LOOP's destructuring gives a
+            ;; FIXNUM variable an unreachable NIL), so it signals at run
+            ;; time rather than stopping the compiler.
+            (emit-load-constant-object form)
+            (emit-invokevirtual +lisp-object+ "intValue" nil :int)))
      (emit-move-from-stack target representation)
      (return-from compile-constant))
     (:long
      (cond ((<= most-negative-java-long form most-positive-java-long)
             (emit-push-constant-long form))
-           ((integerp form)
-            (emit-load-externalized-object form)
-            (emit-invokevirtual +lisp-object+ "longValue" nil :long))
            (t
-            (sys::%format t "compile-constant long representation~%")
-            (assert nil)))
+            (emit-load-constant-object form)
+            (emit-invokevirtual +lisp-object+ "longValue" nil :long)))
      (emit-move-from-stack target representation)
      (return-from compile-constant))
     (:char
@@ -1590,8 +1593,8 @@ The field type of the object is specified by OBJ-REF."
             (emit-push-constant-double form)
             (emit 'd2f))
            (t
-            (sys::%format t "compile-constant :float representation~%")
-            (assert nil)))
+            (emit-load-constant-object form)
+            (emit-invokevirtual +lisp-object+ "floatValue" nil :float)))
      (emit-move-from-stack target representation)
      (return-from compile-constant))
     (:double
@@ -1601,8 +1604,8 @@ The field type of the object is specified by OBJ-REF."
            ((typep form 'double-float)
             (emit-push-constant-double form))
            (t
-            (sys::%format t "compile-constant :double representation~%")
-            (assert nil)))
+            (emit-load-constant-object form)
+            (emit-invokevirtual +lisp-object+ "doubleValue" nil :double)))
      (emit-move-from-stack target representation)
      (return-from compile-constant))
     ((NIL)))
@@ -4164,9 +4167,12 @@ given a specific common representation.")
     (restore-dynamic-environment environment-register)))
 
 (defun p2-quote (form target representation)
-  (aver (or (null representation) (eq representation :boolean)))
   (let ((obj (second form)))
-    (cond ((null obj)
+    (cond ((not (member representation '(nil :boolean)))
+           ;; An unboxed representation: COMPILE-CONSTANT converts the
+           ;; object, or signals at run time if it cannot be converted.
+           (compile-constant obj target representation))
+          ((null obj)
            (when target
              (emit-push-false representation)
              (emit-move-from-stack target representation)))
@@ -7273,6 +7279,11 @@ a TYPE-ERROR if it fails.  The value stays on the stack."
           (compiler-unsupported "COMPILE-FORM unhandled case ~S" form)))))
     ((symbolp form)
      (cond
+       ((not (member representation '(nil :boolean)))
+        ;; NIL, T or a keyword where an unboxed value is wanted -- the
+        ;; unreachable NIL of LOOP's destructuring into a FIXNUM, say:
+        ;; COMPILE-CONSTANT signals at run time if it is ever reached.
+        (compile-constant form target representation))
        ((null form)
         (emit-push-false representation)
         (emit-move-from-stack target representation))
