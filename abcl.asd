@@ -54,6 +54,7 @@
                          (:file "parse-integer-tests")
                          (:file "bignum-normalize-tests")
                          (:file "floor-ceiling-tests")
+                         (:file "subtypep-atom-tests")
                          (:file "latin1-tests")
                          (:file "bugs" :depends-on 
                                 ("file-system-tests"))
