@@ -129,8 +129,6 @@
               (return init-value))
             (setq init-value iterated-value))))))
 
-;; FIXME Need to add support for denormalized floats!
-
 ;; "FLOAT-PRECISION returns the number of significant radix b digits present in
 ;; FLOAT; if FLOAT is a float zero, then the result is an integer zero."
 
@@ -139,15 +137,17 @@
 ;; for a denormalized or zero number.
 (defun float-precision (float)
   (if (floatp float)
-      (cond ((zerop float)
-             0)
-            ((typep float 'single-float)
-             24)
-            ((typep float 'double-float)
-             53)
-            (t
-             ;; Shouldn't get here!
-             (aver nil)))
+      (if (zerop float)
+          0
+          ;; A denormalized float has fewer significant digits: its
+          ;; significand lacks the leading one.  INTEGER-DECODE-FLOAT
+          ;; returns such a significand shifted left, with an exponent
+          ;; below the least one (-149, -1074); the shift is not digits.
+          (multiple-value-bind (significand exponent)
+              (integer-decode-float float)
+            (- (integer-length significand)
+               (max 0 (- (if (typep float 'single-float) -149 -1074)
+                         exponent)))))
       (error 'simple-type-error
              :format-control "~S is not of type FLOAT."
              :format-arguments (list float))))

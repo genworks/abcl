@@ -58,6 +58,7 @@
                          (:file "pprint-loop-tests")
                          (:file "unboxed-constant-tests")
                          (:file "format-rounding-tests")
+                         (:file "float-precision-tests")
                          (:file "latin1-tests")
                          (:file "bugs" :depends-on 
                                 ("file-system-tests"))
