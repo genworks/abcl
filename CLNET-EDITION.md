@@ -39,6 +39,12 @@ Not yet submitted:
 | `PARSE-INTEGER` about 5 times faster |
 | Integers in fixnum range converted from Java `BigInteger`s are fixnums (were neither `EQL` nor `=` to the same fixnum) |
 | `FLOOR`, `CEILING`, `ROUND` and `REM` compiled to static calls, 4-10 times faster; `TRUNCATE` of `most-negative-fixnum` by -1 no longer wraps (added in 1.9.3-clnet.2) |
+| `SUBTYPEP` no longer gives sure but wrong answers when `ATOM` is one of the types (added in 1.9.3-clnet.3) |
+| The pretty printer keeps a `LOOP` form's last element: `(loop nil)` printed as `(LOOP )` (added in 1.9.3-clnet.3) |
+| `(loop with (a b) of-type (fixnum fixnum) = ...)` compiles; a constant that cannot fit an unboxed place becomes a run-time type check (added in 1.9.3-clnet.3) |
+| `~F` and `~E` round a float's exact value once, and renormalize a mantissa that rounds up (added in 1.9.3-clnet.3) |
+| `FLOAT-PRECISION` counts a denormalized float's significant digits (added in 1.9.3-clnet.3) |
+| `EXPT` applies contagion to a zero or one base: `(expt 0 2.0)` is `0.0` (added in 1.9.3-clnet.3) |
 
 Each change has its own tests in `test/lisp/abcl/`.  The edition passes
 the same tests as `master` plus its own, and gives the same results on
