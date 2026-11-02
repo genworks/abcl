@@ -16,7 +16,9 @@
     (loop for x in y collect nil) (loop repeat 3) (loop named foo)
     (loop for x in y when x collect x else collect nil end)
     (loop for x in y if x do) (loop with a = 1 do (f a) (g a))
-    (loop for x in y finally) (loop nil nil) (loop (nil))))
+    (loop for x in y finally) (loop nil nil) (loop (nil))
+    ;; dotted tails, after an expression and after a clause word
+    (loop for x in y . 3) (loop for x . 3) (loop do . 3) (loop on nil (nil) 3.5 . 3.5)))
 
 (deftest pprint-loop.readable
     (remove-if (lambda (form)
@@ -28,8 +30,10 @@
 
 (deftest pprint-loop.last-token
     (list (pprint-loop-string '(loop nil))
-          (pprint-loop-string '(loop for x in y do)))
-  ("(LOOP NIL)" "(LOOP FOR X IN Y DO)"))
+          (pprint-loop-string '(loop for x in y do))
+          (pprint-loop-string '(loop for x in y . 3))
+          (pprint-loop-string '(loop do . 3)))
+  ("(LOOP NIL)" "(LOOP FOR X IN Y DO)" "(LOOP FOR X IN Y . 3)" "(LOOP DO . 3)"))
 
 (deftest pprint-loop.abbreviated
     (let ((form '(loop for x in (a (b (c))) when x collect (f x) else collect nil end)))

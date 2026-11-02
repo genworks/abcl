@@ -1277,13 +1277,18 @@
           ;; tell when its first token is the form's last: NEXT-TOKEN
           ;; would then leave the form before that token was written --
           ;; (LOOP NIL) and (LOOP FOR X IN Y DO) lost their last token.
+          ;; A dotted tail counts as the end too, and PPRINT-POP writes it
+          ;; as ". tail" with no space before the dot: write one, or
+          ;; (LOOP FOR X . 3) printed as (LOOP FOR X. 3).
           (labels ((next-token ()
                      (pprint-exit-if-list-exhausted)
+                     (when (and rest (atom rest))
+                       (write-char #\space xp))
                      (setq token (pprint-pop))
                      (when (consp rest) (setq rest (cdr rest)))
                      (setq type (token-type token)))
                    (last-token-p ()
-                     (null rest))
+                     (atom rest))
                    (print-last-token (xp)
                      (pprint-logical-block (xp nil)
                        (write token :stream xp))
