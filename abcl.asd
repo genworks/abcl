@@ -40,6 +40,7 @@
                          (:file "math-tests"
                                 :depends-on ("compiler-tests"))
                          (:file "misc-tests")
+                         (:file "complex-vector-subseq-tests")
                          (:file "latin1-tests")
                          (:file "bugs" :depends-on 
                                 ("file-system-tests"))
