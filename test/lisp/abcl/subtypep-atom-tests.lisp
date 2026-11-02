@@ -34,18 +34,32 @@
           (first (subtypep-both 'atom '(satisfies atom))))
   (nil nil))
 
+(deftype subtypep-atom-list-alias () 'list)
+(deftype subtypep-atom-alias () 'atom)
+(defstruct subtypep-atom-struct a)
+(defclass subtypep-atom-class () ())
+
 (defparameter *subtypep-atom-types*
-  '(atom cons list null symbol t (not cons) (not symbol) (not list)
-    (or symbol cons) (or atom symbol) (member (a)) (member a 1) (eql (a))
-    sequence fixnum (and list symbol) (or cons atom)))
+  (list* 'atom 'cons 'list 'null 'symbol 't '(not cons) '(not symbol) '(not list)
+         '(or symbol cons) '(or atom symbol) '(member (a)) '(member a 1) '(eql (a))
+         'sequence 'fixnum '(and list symbol) '(or cons atom)
+         ;; type specifiers the ATOM clauses do not name: compound CONS
+         ;; types, aliases, KEYWORD, (MEMBER NIL), structure and standard
+         ;; classes, and class objects themselves
+         '(cons integer) '(or null cons) '(and list (not null)) 'keyword '(member nil)
+         'subtypep-atom-list-alias 'subtypep-atom-alias
+         'subtypep-atom-struct 'subtypep-atom-class 'standard-object 'hash-table
+         (mapcar #'find-class '(cons list t symbol null subtypep-atom-class))))
 
 (defparameter *subtypep-atom-objects*
-  (list nil t 'a 1 -7 (expt 2 40) 1.5 #\x "s" #(1 2) '(a) '(1 . 2)
-        (make-hash-table) #'car))
+  (list nil t 'a :k 1 -7 (expt 2 40) 1.5 #\x "s" #(1 2) '(a) '(1 . 2)
+        (make-hash-table) #'car (make-subtypep-atom-struct)
+        (make-instance 'subtypep-atom-class)))
 
 (deftest subtypep-atom.sound
     ;; Wherever SUBTYPEP is sure of a subtype, no object belongs to the
-    ;; first type and not to the second.
+    ;; first type and not to the second.  (Pairs not involving ATOM are
+    ;; checked too; the battery has none that master gets wrong.)
     (let ((wrong '()))
       (dolist (a *subtypep-atom-types*)
         (dolist (b *subtypep-atom-types*)
