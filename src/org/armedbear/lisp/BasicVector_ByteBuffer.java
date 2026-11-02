@@ -174,7 +174,7 @@ public final class BasicVector_ByteBuffer
   @Override
   public void aset(int index, int n) {
     try {
-      elements.put(index, (byte) n);
+      elements.put(index, coerceToJavaByte(n));
     } catch (IndexOutOfBoundsException e) {
       badIndex(index, capacity);
     }
@@ -309,7 +309,7 @@ public final class BasicVector_ByteBuffer
       }
         
       if (initialElement != null) {
-        byte initValue = (byte)(initialElement.intValue() & 0xFF);
+        byte initValue = coerceToJavaByte(initialElement);
         for (int i = length(); i < newCapacity; i++)
           newElements.put(i, initValue);
       }

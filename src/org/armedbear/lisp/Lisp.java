@@ -1926,13 +1926,45 @@ public static synchronized final void handleInterrupt()
     return T;
   }
 
-  // TODO rename to coerceToJavaChar
+  // An element of an (UNSIGNED-BYTE 16) array as the Java char that holds
+  // it, and of an (UNSIGNED-BYTE 8) array as a Java byte.  Anything else is
+  // a TYPE-ERROR: a fixnum out of range was stored modulo 2^16 or 2^8.
   public static final char coerceToJavaChar(LispObject obj) {
-    return (char)Fixnum.getValue(obj);
+    if (obj instanceof Fixnum)
+      return coerceToJavaChar(((Fixnum) obj).value);
+    type_error(obj, UNSIGNED_BYTE_16);
+    return 0; // Not reached.
+  }
+
+  public static final char coerceToJavaChar(int n) {
+    if (n < 0 || n > 65535)
+      type_error(Fixnum.getInstance(n), UNSIGNED_BYTE_16);
+    return (char) n;
   }
 
   public static final byte coerceToJavaByte(LispObject obj) {
-          return (byte)Fixnum.getValue(obj);
+    if (obj instanceof Fixnum)
+      return coerceToJavaByte(((Fixnum) obj).value);
+    type_error(obj, UNSIGNED_BYTE_8);
+    return 0; // Not reached.
+  }
+
+  public static final byte coerceToJavaByte(int n) {
+    if (n < 0 || n > 255)
+      type_error(Fixnum.getInstance(n), UNSIGNED_BYTE_8);
+    return (byte) n;
+  }
+
+  // An element of an (UNSIGNED-BYTE 32) array kept as a LispObject or a
+  // long: a TYPE-ERROR for anything else, where the arrays under the
+  // primitive-array policy stored any object.
+  public static final LispObject checkUnsignedByte32(LispObject obj) {
+    if (obj instanceof LispInteger
+        && !obj.isLessThan(Fixnum.ZERO)
+        && !obj.isGreaterThan(UNSIGNED_BYTE_32_MAX_VALUE))
+      return obj;
+    type_error(obj, UNSIGNED_BYTE_32);
+    return obj; // Not reached.
   }
 
   public static final int coerceToJavaUnsignedInt(LispObject obj) {

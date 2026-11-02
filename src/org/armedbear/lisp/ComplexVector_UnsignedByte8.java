@@ -197,7 +197,7 @@ public final class ComplexVector_UnsignedByte8 extends AbstractVector
     {
         if (elements != null) {
             try {
-                elements[index] = (byte) n;
+                elements[index] = coerceToJavaByte(n);
             }
             catch (ArrayIndexOutOfBoundsException e) {
                 badIndex(index, elements.length);

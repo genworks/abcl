@@ -170,7 +170,7 @@ public final class BasicVector_UnsignedByte8 extends AbstractVector
   {
     try
       {
-        elements[index] = (byte) n;
+        elements[index] = coerceToJavaByte(n);
       }
     catch (ArrayIndexOutOfBoundsException e)
       {
@@ -301,7 +301,7 @@ public final class BasicVector_UnsignedByte8 extends AbstractVector
         System.arraycopy(elements, 0, newElements, 0,
                          Math.min(capacity, newCapacity));
         if (initialElement != null) {
-            byte initValue = (byte)(initialElement.intValue() & 0xFF);
+            byte initValue = coerceToJavaByte(initialElement);
             for (int i = capacity; i < newCapacity; i++)
                 newElements[i] = initValue;
         }

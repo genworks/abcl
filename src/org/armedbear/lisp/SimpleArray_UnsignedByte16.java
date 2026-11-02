@@ -87,7 +87,7 @@ public final class SimpleArray_UnsignedByte16 extends AbstractArray
     {
         if (dims.length == 0) {
             try {
-              data[index] = coerceToJavaByte(contents); // This has to be wrong!
+              data[index] = coerceToJavaChar(contents);
             }
             catch (ArrayIndexOutOfBoundsException e) {
                 error(new LispError("Bad initial contents for array."));
@@ -218,7 +218,7 @@ public final class SimpleArray_UnsignedByte16 extends AbstractArray
     public void aset(int index, LispObject obj)
     {
         try {
-            data[index] = Fixnum.getValue(obj);
+            data[index] = coerceToJavaChar(obj);
         }
         catch (ArrayIndexOutOfBoundsException e) {
             error(new TypeError("Bad row major index " + index + "."));
@@ -274,7 +274,7 @@ public final class SimpleArray_UnsignedByte16 extends AbstractArray
 
     {
         try {
-            data[getRowMajorIndex(subscripts)] = Fixnum.getValue(obj);
+            data[getRowMajorIndex(subscripts)] = coerceToJavaChar(obj);
         }
         catch (ArrayIndexOutOfBoundsException e) {
             error(new TypeError("Bad row major index " +

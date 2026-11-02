@@ -207,7 +207,7 @@ public final class ComplexVector_ByteBuffer extends AbstractVector
   public void aset(int index, int n) {
     if (elements != null) {
       try {
-        elements.put(index, (byte) n);
+        elements.put(index, coerceToJavaByte(n));
       } catch (IndexOutOfBoundsException e) {
         badIndex(index, capacity);
       }
