@@ -211,6 +211,14 @@
              ;; digit is output before the decimal point if the printed value
              ;; is less than one, and this single zero digit is not output at
              ;; all if w=d+1."
+             ;; A lone zero after the point (90000870.0, the shortest
+             ;; digits of 9.000087e7 ending left of the point) is no
+             ;; digit to keep or to cut: drop it, and pad as for any
+             ;; shorter fraction.  Cutting it went to the exact value,
+             ;; and ~,0F printed 90000872.
+             (when (and (= (- length index 1) 1) (char= (schar s (1- length)) #\0))
+               (setf s (subseq s 0 (1+ index))
+                     length (length s)))
              (let ((actual-fdigits (- length index 1)))
                (cond ((< actual-fdigits fdigits)
                       ;; Add the required number of trailing zeroes.
@@ -2308,8 +2316,11 @@ up, as digits around a point with no leading zero."
       (format-princ stream number nil nil w 1 0 pad)))
 
 (defun format-exponent-marker (number)
+  ;; "The exponent marker that prin1 would use" (CLHS 22.3.3.2): ABCL's
+  ;; prin1 writes 1.0E10 for a float of the default format, and ~E
+  ;; wrote 1.0e+10.
   (if (typep number *read-default-float-format*)
-      #\e
+      #\E
       (typecase number
         (single-float #\f)
         (double-float #\d)

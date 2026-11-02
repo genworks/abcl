@@ -22,20 +22,30 @@
               ;; from the exact value (the single-float 1.0e-5 is just
               ;; below 1.0e-5) that disagreed with the digits
               ("~,7,,0e" 9.462335e-13) ("~,7,,0e" 5.6077955e12)
-              ("~e" 1.0e-5) ("~,3e" 1.0e-5) ("~e" 1d-300)))
-  ("0.647973e+2" "2.67" "2.67" "0.1"
-   "10.00" "3." "1.000e+0" "1.23e+5"
-   "1.0e+1" "1.00e+1" "1.0e-1" "1.e+1"
-   "10.e+0" "0.1e+1" "  1.00e+1"
-   "0.9462335e-12" "0.5607795e+13"
-   "1.0e-5" "1.000e-5" "1.0d-300"))
+              ("~e" 1.0e-5) ("~,3e" 1.0e-5) ("~e" 1d-300)
+              ;; the exponent marker is the one prin1 would use: E for
+              ;; the default format (prin1 writes 1.0E10), the format's
+              ;; own letter otherwise
+              ("~e" 1.0e10) ("~e" 1d10)))
+  ("0.647973E+2" "2.67" "2.67" "0.1"
+   "10.00" "3." "1.000E+0" "1.23E+5"
+   "1.0E+1" "1.00E+1" "1.0E-1" "1.E+1"
+   "10.E+0" "0.1E+1" "  1.00E+1"
+   "0.9462335E-12" "0.5607795E+13"
+   "1.0E-5" "1.000E-5" "1.0d-300"
+   "1.0E+10" "1.0d+10"))
 
 (deftest format-rounding.padding-unchanged
     ;; Where the shortest digits already fit, zeros pad them as before,
-    ;; rather than the float's full binary expansion.
+    ;; rather than the float's full binary expansion; and where they end
+    ;; left of the point (9.000087e7 is 90000870.0), the lone zero after
+    ;; it is no digit to cut: 90000870., not the exact 90000872.
     (list (format-rounding "~,2f" 1d23) (format-rounding "~,2f" 1e20)
-          (format-rounding "~,4f" 1.37))
-  ("100000000000000000000000.00" "100000000000000000000.00" "1.3700"))
+          (format-rounding "~,4f" 1.37)
+          (format-rounding "~,0f" 9.000087e7) (format-rounding "~,1f" 9.000087e7)
+          (format-rounding "~,0f" 1e20))
+  ("100000000000000000000000.00" "100000000000000000000.00" "1.3700"
+   "90000870." "90000870.0" "100000000000000000000."))
 
 (defun format-rounding-expected-f (x d)
   (multiple-value-bind (int frac)
@@ -43,7 +53,8 @@
     (format nil "~d.~v,'0d" int d frac)))
 
 (defun format-rounding-expected-e (x d)
-  ;; ~,dE of positive X: one digit before the point, D after.
+  ;; ~,dE of positive X: one digit before the point, D after, and the
+  ;; marker prin1 uses for the default format.
   (let* ((r (rational x))
          (e (floor (log x 10))))
     (loop while (>= r (* 10 (expt 10 e))) do (incf e))
@@ -53,7 +64,7 @@
         (setf m (floor (+ (/ m 10) 1/2)))
         (incf e))
       (multiple-value-bind (int frac) (floor m (expt 10 d))
-        (format nil "~d.~v,'0de~:[+~;-~]~d" int d frac (minusp e) (abs e))))))
+        (format nil "~d.~v,'0dE~:[+~;-~]~d" int d frac (minusp e) (abs e))))))
 
 (defparameter *format-rounding-floats*
   (loop for i from 1 to 400
