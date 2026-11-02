@@ -389,7 +389,8 @@ public final class Bignum extends LispInteger
       return Fixnum.ZERO;
     if (n == 1)
       return this;
-    return new Bignum(value.multiply(BigInteger.valueOf(n)));
+    // number() normalizes: 2^31 * -1 is the fixnum MOST-NEGATIVE-FIXNUM.
+    return number(value.multiply(BigInteger.valueOf(n)));
   }
 
   @Override
@@ -402,10 +403,10 @@ public final class Bignum extends LispInteger
           return Fixnum.ZERO;
         if (n == 1)
           return this;
-        return new Bignum(value.multiply(BigInteger.valueOf(n)));
+        return number(value.multiply(BigInteger.valueOf(n)));
       }
     if (obj instanceof Bignum)
-      return new Bignum(value.multiply(((Bignum)obj).value));
+      return number(value.multiply(((Bignum)obj).value));
     if (obj instanceof Ratio)
       {
         BigInteger n = ((Ratio)obj).numerator();
