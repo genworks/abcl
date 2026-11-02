@@ -63,8 +63,9 @@ Not submitted:
 | `FLOOR`, `CEILING`, `ROUND` and `REM` compiled to static calls, 4-10 times faster in tight loops |
 
 Not yet submitted, to follow once upstream has worked through the
-pull requests above (new in 1.9.3-clnet.5; specialized arrays, under
-both of ABCL's allocation policies, NIO buffers and Java arrays):
+pull requests above (specialized arrays, under both of ABCL's
+allocation policies, NIO buffers and Java arrays, new in
+1.9.3-clnet.5; pathnames new in 1.9.3-clnet.6):
 
 | Change |
 |---|
@@ -76,6 +77,8 @@ both of ABCL's allocation policies, NIO buffers and Java arrays):
 | `SUBSEQ` and `REVERSE` of an adjustable, fill-pointer or displaced byte vector keep its element type |
 | Adjustable, fill-pointer and displaced `(unsigned-byte 16)` vectors (their element type was `T`, and they stored any object) |
 | The places `ADJUST-ARRAY` and `VECTOR-PUSH-EXTEND` add to an adjustable `(unsigned-byte 32)` vector hold 0, not a Java null |
+| `:BACK` in a directory is written `..` in a namestring (`(:relative :back)` made the namestring of the root) |
+| A pathname printed readably reads back as itself, or printing signals `PRINT-NOT-READABLE` (`(make-pathname :name "a.b")` printed as `#P"a.b"`, which reads back with name `"a"` and type `"b"`) |
 
 1.9.3-clnet.4 corrected two things 1.9.3-clnet.3 got wrong:
 `DECODE-FLOAT` of a denormalized float returned a significand below

@@ -41,7 +41,7 @@ public final class Version
 {
   private Version() {}
   
-  static final String baseVersion = "1.9.3-clnet.5";
+  static final String baseVersion = "1.9.3-clnet.6";
   
   static void init() {
     try {
