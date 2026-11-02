@@ -62,7 +62,22 @@ Not submitted:
 | `PARSE-INTEGER` about 5 times faster |
 | `FLOOR`, `CEILING`, `ROUND` and `REM` compiled to static calls, 4-10 times faster in tight loops |
 
-1.9.3-clnet.4 also corrects two things 1.9.3-clnet.3 got wrong:
+Not yet submitted, to follow once upstream has worked through the
+pull requests above (new in 1.9.3-clnet.5; specialized arrays, under
+both of ABCL's allocation policies, NIO buffers and Java arrays):
+
+| Change |
+|---|
+| A simple array of rank 0 is of the class `SIMPLE-ARRAY` (`(typep #0A1 (find-class 'simple-array))` was false) |
+| `ADJUST-ARRAY` accepts an array's own `:element-type` (`(unsigned-byte 8)`, 16 and 32 were refused) |
+| `ADJUST-ARRAY` of a simple `(unsigned-byte 16)` or 32 vector to a new length no longer ends the thread with a Java `ArrayStoreException` |
+| Arrays of `(unsigned-byte 8)`, 16 and 32 refuse integers out of range (256 was stored as 0) |
+| `ADJUST-ARRAY` of a simple `(unsigned-byte 8)` or 32 vector to a displaced one keeps the element type (it became `T`) |
+| `SUBSEQ` and `REVERSE` of an adjustable, fill-pointer or displaced byte vector keep its element type |
+| Adjustable, fill-pointer and displaced `(unsigned-byte 16)` vectors (their element type was `T`, and they stored any object) |
+| The places `ADJUST-ARRAY` and `VECTOR-PUSH-EXTEND` add to an adjustable `(unsigned-byte 32)` vector hold 0, not a Java null |
+
+1.9.3-clnet.4 corrected two things 1.9.3-clnet.3 got wrong:
 `DECODE-FLOAT` of a denormalized float returned a significand below
 1/2, and `(format nil "~,0f" 9.000087e7)` printed `90000872.`.
 
