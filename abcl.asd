@@ -74,6 +74,7 @@
                          (:file "unsigned-byte-16-complex-vector-tests")
                          (:file "unsigned-byte-32-new-elements-tests")
                          (:file "pathname-namestring-back-tests")
+                         (:file "pathname-print-readably-tests")
                          (:file "latin1-tests")
                          (:file "bugs" :depends-on 
                                 ("file-system-tests"))

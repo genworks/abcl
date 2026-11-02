@@ -758,6 +758,13 @@ public class Pathname extends LispObject
                         useNamestring = false;
                     }
                 }
+                // Whatever the components, #P"namestring" must read back
+                // as this pathname: the name "a.b" read back as name "a"
+                // and type "b", and a type alone, ".txt", as a name.
+                if (useNamestring && getClass() == Pathname.class
+                    && !readsBackAsThis(s)) {
+                    useNamestring = false;
+                }
             }
         } else { 
             useNamestring = false;
@@ -824,6 +831,31 @@ public class Pathname extends LispObject
 
     public static Pathname parseNamestring(String s) {
       return (Pathname)Pathname.create(s);
+    }
+
+    // Whether NAMESTRING, read as #P"NAMESTRING" (Stream.readPathname),
+    // gives a pathname of this host, device, directory, name and type; a
+    // readable pathname's version is NIL, as printObject requires.
+    private boolean readsBackAsThis(String namestring) {
+        LispObject back = parseNamestring(new SimpleString(namestring));
+        if (!(back instanceof Pathname))
+            return false;
+        Pathname p = (Pathname) back;
+        return sameComponent(p.getHost(), getHost())
+            && sameComponent(p.getDevice(), getDevice())
+            && sameComponent(p.getDirectory(), getDirectory())
+            && sameComponent(p.getName(), getName())
+            && sameComponent(p.getType(), getType());
+    }
+
+    // NIL and :UNSPECIFIC both leave a component out of the namestring
+    // (19.2.2.2.3.1), so either reads back as NIL: a truename's device is
+    // :UNSPECIFIC, and its namestring must still serve.
+    private static boolean sameComponent(LispObject a, LispObject b) {
+        if (a.equal(b))
+            return true;
+        return (a == NIL || a == Keyword.UNSPECIFIC)
+            && (b == NIL || b == Keyword.UNSPECIFIC);
     }
 
     public static boolean isValidURL(String s) {
