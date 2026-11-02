@@ -69,7 +69,7 @@ public final class BasicVector_CharBuffer
       elements = CharBuffer.allocate(capacity);
     }
     for (int i = array.length; i-- > 0;) {
-      elements.put(i, (char)Fixnum.getValue(array[i])); // FIXME bulk copy
+      elements.put(i, coerceToJavaChar(array[i])); // FIXME bulk copy
     }
   }
 
@@ -171,7 +171,7 @@ public final class BasicVector_CharBuffer
   @Override
   public void aset(int index, int n) {
     try {
-      elements.put(index, (char)n);
+      elements.put(index, coerceToJavaChar(n));
     } catch (IndexOutOfBoundsException e) {
       badIndex(index, capacity);
     }
@@ -179,14 +179,10 @@ public final class BasicVector_CharBuffer
 
   @Override
   public void aset(int index, LispObject obj) {
-    if (obj instanceof Fixnum) {
-      try {
-        elements.put(index, (char)((Fixnum)obj).value);
-      } catch (ArrayIndexOutOfBoundsException e) {
-        badIndex(index, capacity);
-      }
-    } else {
-      type_error(obj, UNSIGNED_BYTE_16);
+    try {
+      elements.put(index, coerceToJavaChar(obj));
+    } catch (IndexOutOfBoundsException e) {
+      badIndex(index, capacity);
     }
   }
 

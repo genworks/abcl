@@ -199,7 +199,7 @@ public final class ComplexVector_UnsignedByte32 extends AbstractVector
     {
         if (elements != null) {
             try {
-                elements[index] = newValue;
+                elements[index] = checkUnsignedByte32(newValue);
             }
             catch (ArrayIndexOutOfBoundsException e) {
                 badIndex(index, elements.length);
@@ -382,12 +382,12 @@ public final class ComplexVector_UnsignedByte32 extends AbstractVector
             if (initialContents.listp()) {
                 LispObject list = initialContents;
                 for (int i = 0; i < newCapacity; i++) {
-                    newElements[i] = list.car();
+                    newElements[i] = checkUnsignedByte32(list.car());
                     list = list.cdr();
                 }
             } else if (initialContents.vectorp()) {
                 for (int i = 0; i < newCapacity; i++)
-                    newElements[i] = initialContents.elt(i);
+                    newElements[i] = checkUnsignedByte32(initialContents.elt(i));
             } else
                 type_error(initialContents, Symbol.SEQUENCE);
             elements = newElements;
@@ -407,7 +407,7 @@ public final class ComplexVector_UnsignedByte32 extends AbstractVector
             // Initialize new elements (if aapplicable).
             if (initialElement != null) {
                 for (int i = capacity; i < newCapacity; i++)
-                    elements[i] = initialElement;
+                    elements[i] = checkUnsignedByte32(initialElement);
             }
         }
         capacity = newCapacity;

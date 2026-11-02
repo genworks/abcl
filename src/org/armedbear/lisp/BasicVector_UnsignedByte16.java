@@ -159,7 +159,7 @@ public final class BasicVector_UnsignedByte16 extends AbstractVector
     public void aset(int index, int n)
     {
         try {
-            elements[index] = n;
+            elements[index] = coerceToJavaChar(n);
         }
         catch (ArrayIndexOutOfBoundsException e) {
             badIndex(index, capacity);
@@ -169,16 +169,11 @@ public final class BasicVector_UnsignedByte16 extends AbstractVector
     @Override
     public void aset(int index, LispObject obj)
     {
-        if (obj instanceof Fixnum) {
-                try {
-            elements[index] = ((Fixnum)obj).value;
+        try {
+            elements[index] = coerceToJavaChar(obj);
         }
         catch (ArrayIndexOutOfBoundsException e) {
             badIndex(index, capacity);
-        }
-        }
-        else {
-            type_error(obj, UNSIGNED_BYTE_16);
         }
     }
 

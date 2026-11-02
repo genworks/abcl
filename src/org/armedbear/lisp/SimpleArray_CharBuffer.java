@@ -236,7 +236,7 @@ public final class SimpleArray_CharBuffer
   @Override
   public void aset(int index, LispObject obj) {
     try {
-      data.put(index, (char)Fixnum.getValue(obj));
+      data.put(index, coerceToJavaChar(obj));
     }
     catch (IndexOutOfBoundsException e) {
       error(new TypeError("Bad row major index " + index + "."));
@@ -287,7 +287,7 @@ public final class SimpleArray_CharBuffer
   @Override
   public void set(int[] subscripts, LispObject obj) {
     try {
-      data.put(getRowMajorIndex(subscripts), (char) Fixnum.getValue(obj));
+      data.put(getRowMajorIndex(subscripts), coerceToJavaChar(obj));
     } catch (ArrayIndexOutOfBoundsException e) {
       error(new TypeError("Bad row major index " +
                           getRowMajorIndex(subscripts) + "."));

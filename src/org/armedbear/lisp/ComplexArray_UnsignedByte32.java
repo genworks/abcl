@@ -87,7 +87,7 @@ public final class ComplexArray_UnsignedByte32 extends AbstractArray
     {
         if (dims.length == 0) {
             try {
-                data[index] = contents;
+                data[index] = checkUnsignedByte32(contents);
             }
             catch (ArrayIndexOutOfBoundsException e) {
                 error(new LispError("Bad initial contents for array."));
@@ -207,7 +207,7 @@ public final class ComplexArray_UnsignedByte32 extends AbstractArray
     {
         if (data != null) {
             try {
-                data[index] = newValue;
+                data[index] = checkUnsignedByte32(newValue);
             }
             catch (ArrayIndexOutOfBoundsException e) {
                 error(new TypeError("Bad row major index " + index + "."));

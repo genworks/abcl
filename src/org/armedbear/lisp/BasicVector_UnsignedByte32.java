@@ -55,7 +55,7 @@ public final class BasicVector_UnsignedByte32 extends AbstractVector
     capacity = array.length;
     elements = new long[capacity];
     for (int i = array.length; i-- > 0;)
-      elements[i] = array[i].longValue();
+      elements[i] = checkUnsignedByte32(array[i]).longValue();
   }
 
   @Override
@@ -178,7 +178,7 @@ public final class BasicVector_UnsignedByte32 extends AbstractVector
   {
     try
       {
-        elements[index] = newValue.longValue();
+        elements[index] = checkUnsignedByte32(newValue).longValue();
       }
     catch (ArrayIndexOutOfBoundsException e)
       {
