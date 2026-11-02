@@ -111,6 +111,10 @@ public final class make_array
               } else { // if (Java.Buffers.active.equals(AllocationPolicy.PRIMITIVE_ARRAY)) 
                 v = new ComplexVector_UnsignedByte8(dimv[0], array, displacement);
               }
+            } else if (arrayElementType.equal(UNSIGNED_BYTE_16)) {
+              // One class under both policies; a ComplexVector's element
+              // type was T.
+              v = new ComplexVector_UnsignedByte16(dimv[0], array, displacement);
             } else if (arrayElementType.equal(UNSIGNED_BYTE_32)) {
               if (Java.Buffers.active.equals(AllocationPolicy.NIO)) {
                 // an abstract array doesn't have a directAllocation  ???
@@ -193,7 +197,12 @@ public final class make_array
         }
         defaultInitialElement = Fixnum.ZERO;
       } else if (upgradedType.equal(UNSIGNED_BYTE_16)
-                 && fillPointer == NIL && adjustable == NIL) {
+                 && (fillPointer != NIL || adjustable != NIL)) {
+        // One class under both policies; these fell through to a
+        // ComplexVector, of element type T.
+        v = new ComplexVector_UnsignedByte16(size);
+        defaultInitialElement = Fixnum.ZERO;
+      } else if (upgradedType.equal(UNSIGNED_BYTE_16)) {
         if (Java.Buffers.active.equals(AllocationPolicy.NIO)) {
           if (!nioBuffer.equals(NIL)) {
             Object o = ((JavaObject)nioBuffer).getObject();
