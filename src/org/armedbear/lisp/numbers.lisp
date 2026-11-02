@@ -164,31 +164,32 @@
              :format-arguments (list float)))))
 
 ;;; From <http://paste.lisp.org/display/10847>.  Thanks Xophe!
+;;; The mantissa is brought to FLOAT-DIGITS bits, the format's width,
+;;; so that DECODE-FLOAT's significand lies in [1/2, 1) for a
+;;; denormalized float too; FLOAT-PRECISION is fewer bits for those.
 (defun sane-integer-decode-float (float)
   (multiple-value-bind (mantissa exp sign)
       (integer-decode-float float)
-    (let ((fixup (- (integer-length mantissa) (float-precision float))))
+    (let ((fixup (- (integer-length mantissa) (float-digits float))))
       (values (ash mantissa (- fixup))
               (+ exp fixup)
               sign))))
 
 (defun decode-float-single (float)
-  ;; TODO memoize
-  (let ((float-precision-single (float-precision 1f0)))
+  (let ((digits (float-digits 1f0)))
     (multiple-value-bind (significand exponent sign)
         (sane-integer-decode-float float)
-      (values (coerce (/ significand (expt 2 float-precision-single)) 'single-float)
-              (+ exponent float-precision-single)
+      (values (coerce (/ significand (expt 2 digits)) 'single-float)
+              (+ exponent digits)
               (if (minusp sign) -1f0 1f0)))))
 
 
 (defun decode-float-double (float)
-  ;; TODO memoize
-  (let ((float-precision-double (float-precision 1d0)))
+  (let ((digits (float-digits 1d0)))
     (multiple-value-bind (significand exponent sign)
         (sane-integer-decode-float float)
-      (values (coerce (/ significand (expt 2 float-precision-double)) 'double-float)
-              (+ exponent float-precision-double)
+      (values (coerce (/ significand (expt 2 digits)) 'double-float)
+              (+ exponent digits)
               (if (minusp sign) -1d0 1d0)))))
 
 (defun conjugate (number)
