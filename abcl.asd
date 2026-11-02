@@ -70,6 +70,7 @@
                          (:file "adjust-simple-vector-grow-tests")
                          (:file "unsigned-byte-store-range-tests")
                          (:file "displaced-adjust-tests")
+                         (:file "complex-vector-subseq-tests")
                          (:file "latin1-tests")
                          (:file "bugs" :depends-on 
                                 ("file-system-tests"))

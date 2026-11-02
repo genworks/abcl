@@ -220,7 +220,8 @@ public final class ComplexVector_IntBuffer
 
   @Override
   public LispObject subseq(int start, int end) {
-    SimpleVector v = new SimpleVector(end - start);
+    // A simple vector of the same element type (CLHS SUBSEQ), not of T.
+    BasicVector_IntBuffer v = new BasicVector_IntBuffer(end - start, directAllocation);
     int i = start, j = 0;
     try {
       while (i < end) {
@@ -265,7 +266,8 @@ public final class ComplexVector_IntBuffer
   @Override
   public LispObject reverse() {
     int length = length();
-    SimpleVector result = new SimpleVector(length);
+    // A simple vector of the same element type (CLHS REVERSE), not of T.
+    BasicVector_IntBuffer result = new BasicVector_IntBuffer(length, directAllocation);
     int i, j;
     for (i = 0, j = length - 1; i < length; i++, j--) {
       result.aset(i, AREF(j));

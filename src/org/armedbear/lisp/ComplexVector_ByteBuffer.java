@@ -237,7 +237,8 @@ public final class ComplexVector_ByteBuffer extends AbstractVector
 
   @Override
   public LispObject subseq(int start, int end) {
-    SimpleVector v = new SimpleVector(end - start);
+    // A simple vector of the same element type (CLHS SUBSEQ), not of T.
+    BasicVector_ByteBuffer v = new BasicVector_ByteBuffer(end - start, directAllocation);
     int i = start, j = 0;
     try {
       while (i < end)

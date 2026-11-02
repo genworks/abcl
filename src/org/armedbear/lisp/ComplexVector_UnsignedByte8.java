@@ -228,7 +228,8 @@ public final class ComplexVector_UnsignedByte8 extends AbstractVector
     @Override
     public LispObject subseq(int start, int end)
     {
-        SimpleVector v = new SimpleVector(end - start);
+        // A simple vector of the same element type (CLHS SUBSEQ), not of T.
+        BasicVector_UnsignedByte8 v = new BasicVector_UnsignedByte8(end - start);
         int i = start, j = 0;
         try {
             while (i < end)
