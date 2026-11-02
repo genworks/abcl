@@ -620,7 +620,16 @@ public final class MathFunctions
                     ? ((Complex)power).getRealPart() : power;
                 if (realPower.plusp())
                     return base.multiplyBy(power);
-                return base;
+                // "For all other values of x, 0^x is an error" (CLHS
+                // EXPT): a zero base to a power whose real part is zero
+                // or negative.  (A zero power was answered above.)
+                // Returning BASE gave 0, and (expt 0 -2) was 0.
+                LispObject operands = new Cons(base, new Cons(power));
+                LispObject args = new Cons(Keyword.OPERATION,
+                                           new Cons(Symbol.EXPT,
+                                                    new Cons(Keyword.OPERANDS,
+                                                             new Cons(operands))));
+                return error(new DivisionByZero(args));
             }
             // One to a rational power is itself; to a float power it is a
             // float one (computed below), not the rational 1.
