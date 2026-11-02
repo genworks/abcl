@@ -72,6 +72,7 @@
                          (:file "displaced-adjust-tests")
                          (:file "complex-vector-subseq-tests")
                          (:file "unsigned-byte-16-complex-vector-tests")
+                         (:file "unsigned-byte-32-new-elements-tests")
                          (:file "latin1-tests")
                          (:file "bugs" :depends-on 
                                 ("file-system-tests"))
