@@ -66,6 +66,7 @@
                          (:file "float-precision-tests")
                          (:file "expt-contagion-tests")
                          (:file "array-class-tests")
+                         (:file "adjust-array-element-type-tests")
                          (:file "latin1-tests")
                          (:file "bugs" :depends-on 
                                 ("file-system-tests"))

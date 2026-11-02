@@ -63,8 +63,8 @@ public final class adjust_array extends Primitive
         if (initialElementProvided && initialContentsProvided) {
             return error(new LispError("ADJUST-ARRAY: cannot specify both initial element and initial contents."));
         }
-        if (elementType != array.getElementType() &&
-            getUpgradedArrayElementType(elementType) != array.getElementType())
+        if (!elementType.equal(array.getElementType()) &&
+            !getUpgradedArrayElementType(elementType).equal(array.getElementType()))
         {
             return error(new LispError("ADJUST-ARRAY: incompatible element type."));
         }

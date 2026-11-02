@@ -1816,12 +1816,15 @@ public static synchronized final void handleInterrupt()
       return Symbol.CHARACTER;
     if (type instanceof Cons)
       {
+        // The shared constants, never the caller's list: arrays keep the
+        // upgraded type as their element type, and ADJUST-ARRAY and others
+        // compare element types with ==.
         if (type.equal(UNSIGNED_BYTE_8))
-          return type;
+          return UNSIGNED_BYTE_8;
         if (type.equal(UNSIGNED_BYTE_16))
-          return type;
+          return UNSIGNED_BYTE_16;
         if (type.equal(UNSIGNED_BYTE_32))
-          return type;
+          return UNSIGNED_BYTE_32;
         LispObject car = type.car();
         if (car == Symbol.INTEGER)
           {
