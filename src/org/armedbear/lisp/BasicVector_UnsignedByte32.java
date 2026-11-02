@@ -291,13 +291,16 @@ public final class BasicVector_UnsignedByte32 extends AbstractVector
       }
     if (capacity != newCapacity)
       {
-        LispObject[] newElements = new LispObject[newCapacity];
-        System.arraycopy(elements, 0, newElements, 0,
-                         Math.min(capacity, newCapacity));
+        // Copying elements, a long[], into a LispObject[] threw
+        // ArrayStoreException, and new elements with no initial element
+        // were null.
+        BasicVector_UnsignedByte32 v = new BasicVector_UnsignedByte32(newCapacity);
+        final int limit = Math.min(capacity, newCapacity);
+        System.arraycopy(elements, 0, v.elements, 0, limit);
         if (initialElement != null)
-            for (int i = capacity; i < newCapacity; i++)
-                newElements[i] = initialElement;
-        return new BasicVector_UnsignedByte32(newElements);
+            for (int i = limit; i < newCapacity; i++)
+                v.aset(i, initialElement);
+        return v;
       }
     // No change.
     return this;

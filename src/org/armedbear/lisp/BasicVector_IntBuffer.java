@@ -288,15 +288,18 @@ public final class BasicVector_IntBuffer
       return new BasicVector_IntBuffer(newElements, directAllocation);
     }
     if (capacity != newCapacity) {
-      LispObject[] newElements = new LispObject[newCapacity];
-      System.arraycopy(elements.array(), 0, newElements, 0,
-                       Math.min(capacity, newCapacity));
+      // Element by element: copying elements.array(), an int[], into a
+      // LispObject[] threw ArrayStoreException, a direct buffer has no
+      // array, and new elements with no initial element were null.
+      BasicVector_IntBuffer v = new BasicVector_IntBuffer(newCapacity, directAllocation);
+      final int limit = Math.min(capacity, newCapacity);
+      for (int i = 0; i < limit; i++)
+        v.elements.put(i, elements.get(i));
       if (initialElement != null) {
-        for (int i = capacity; i < newCapacity; i++) {
-          newElements[i] = initialElement;
-        }
+        for (int i = limit; i < newCapacity; i++)
+          v.aset(i, initialElement);
       }
-      return new BasicVector_IntBuffer(newElements, directAllocation);
+      return v;
     }
     // No change.
     return this;
