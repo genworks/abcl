@@ -306,7 +306,10 @@ public final class BasicVector_IntBuffer
   public AbstractVector adjustArray(int newCapacity,
                                      AbstractArray displacedTo,
                                      int displacement) {
-    return new ComplexVector(newCapacity, displacedTo, displacement);
+    // A vector of its own element type, as MAKE-ARRAY makes; a plain
+    // ComplexVector's element type was T.
+    return new ComplexVector_IntBuffer(newCapacity, displacedTo, displacement,
+                                       directAllocation);
   }
 
   @Override
