@@ -345,6 +345,9 @@ public final class ComplexVector_UnsignedByte32 extends AbstractVector
             if (capacity < minCapacity) {
                 LispObject[] newArray = new LispObject[minCapacity];
                 System.arraycopy(elements, 0, newArray, 0, capacity);
+                // 0, not null, in the new places beyond the fill pointer.
+                for (int i = capacity; i < minCapacity; i++)
+                    newArray[i] = Fixnum.ZERO;
                 elements = newArray;
                 capacity = minCapacity;
             }
@@ -360,6 +363,8 @@ public final class ComplexVector_UnsignedByte32 extends AbstractVector
                     Math.min(capacity, array.getTotalSize() - displacement);
                 for (int i = 0; i < limit; i++)
                     elements[i] = array.AREF(displacement + i);
+                for (int i = limit; i < minCapacity; i++)
+                    elements[i] = Fixnum.ZERO;
                 capacity = minCapacity;
                 array = null;
                 displacement = 0;
@@ -404,11 +409,11 @@ public final class ComplexVector_UnsignedByte32 extends AbstractVector
                                  Math.min(capacity, newCapacity));
                 elements = newElements;
             }
-            // Initialize new elements (if aapplicable).
-            if (initialElement != null) {
-                for (int i = capacity; i < newCapacity; i++)
-                    elements[i] = initialElement;
-            }
+            // Initialize new elements: the initial element, or 0, never
+            // the null that no Lisp function expects to find in an array.
+            LispObject fill = initialElement != null ? initialElement : Fixnum.ZERO;
+            for (int i = Math.min(capacity, newCapacity); i < newCapacity; i++)
+                elements[i] = fill;
         }
         capacity = newCapacity;
         array = null;

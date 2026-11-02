@@ -53,8 +53,9 @@ public final class ComplexArray_UnsignedByte32 extends AbstractArray
         this.dimv = dimv;
         totalSize = computeTotalSize(dimv);
         data = new LispObject[totalSize];
+        // 0, an (UNSIGNED-BYTE 32): ADJUST-ARRAY left NIL in the new places.
         for (int i = totalSize; i-- > 0;)
-            data[i] = NIL;
+            data[i] = Fixnum.ZERO;
     }
 
     public ComplexArray_UnsignedByte32(int[] dimv, LispObject initialContents)
