@@ -59,10 +59,13 @@ public final class ZeroRankArray extends AbstractArray
             return list(Symbol.SIMPLE_ARRAY, elementType, NIL);
     }
 
+    // The class answers as TYPE-OF and TYPEP do, as SimpleArray_T's does:
+    // ARRAY would leave (TYPEP #0A1 (FIND-CLASS 'SIMPLE-ARRAY)) false while
+    // (TYPEP #0A1 'SIMPLE-ARRAY) is true.
     @Override
     public LispObject classOf()
     {
-        return BuiltInClass.ARRAY;
+        return adjustable ? BuiltInClass.ARRAY : BuiltInClass.SIMPLE_ARRAY;
     }
 
     // ADJUSTABLE-ARRAY-P answers as TYPE-OF and TYPEP do.  The default,
@@ -76,7 +79,7 @@ public final class ZeroRankArray extends AbstractArray
     @Override
     public LispObject typep(LispObject type)
     {
-        if (type == Symbol.SIMPLE_ARRAY)
+        if (type == Symbol.SIMPLE_ARRAY || type == BuiltInClass.SIMPLE_ARRAY)
             return adjustable ? NIL : T;
         return super.typep(type);
     }
