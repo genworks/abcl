@@ -641,7 +641,10 @@ public class Pathname extends LispObject
                     sb.append('*');
                 } else if (part == Keyword.WILD_INFERIORS) {
                     sb.append("**");
-                } else if (part == Keyword.UP) {
+                } else if (part == Keyword.UP || part == Keyword.BACK) {
+                    // :BACK wrote nothing, so a relative directory
+                    // (:RELATIVE :BACK) made the namestring "/z", an
+                    // absolute one.
                     sb.append("..");
                 }
                 sb.append(directoryDelimiter);
