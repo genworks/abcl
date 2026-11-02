@@ -1,6 +1,6 @@
 (in-package #:abcl.test.lisp)
 
-;;; The class named C and the type C hold the same objects (CLHS 4.3.7),
+;;; The class named C and the type C hold the same objects (CLHS 4.3.8),
 ;;; for every standard array class and every kind of array.  An array of
 ;;; rank zero was of the type SIMPLE-ARRAY but not of the class: its
 ;;; CLASS-OF said ARRAY, adjustable or not.
