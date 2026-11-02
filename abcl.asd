@@ -45,6 +45,7 @@
                          (:file "math-tests"
                                 :depends-on ("compiler-tests"))
                          (:file "misc-tests")
+                         (:file "scale-float-tests")
                          (:file "gethash-tests")
                          (:file "the-type-check-tests")
                          (:file "policy-scope-tests")
